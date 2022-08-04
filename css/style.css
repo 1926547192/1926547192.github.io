@@ -327,6 +327,7 @@ g.Header {
     display: inline-block;
     text-align: left;
     margin-top: 40px;
+    margin-left: 10%;
 }
 
 .home_type .more_info a:hover {
