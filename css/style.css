@@ -354,7 +354,6 @@ g.Header {
     font-weight: 500;
     margin-top: 30px;
     margin-right: 18px;
-    margin-left: 72px;
     transition: all 0.3s ease-in-out 0s;
     -webkit-transition: all 0.3s ease-in-out 0s;
 }
