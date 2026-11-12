@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>阙下归人 · 渠县汉阙互动解谜</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game">
+
+    <!-- ======== 舞台 ======== -->
+    <div id="stage">
+      <div id="bg-layer"></div>
+      <div id="char-layer"></div>
+      <div id="light-layer"><div id="flame"></div></div>
+      <div id="fx-layer"></div>
+      <div id="minigame-layer"></div>
+      <div id="vignette"></div>
+    </div>
+
+    <!-- ======== HUD ======== -->
+    <div id="hint"></div>
+    <div id="hp-bar" class="hidden">
+      <span class="hp-label">心神</span>
+      <div id="hp-segs"></div>
+    </div>
+    <button id="mute-btn" title="声音开关">🔊</button>
+
+    <div id="hud-fire"></div>
+    <button id="hud-book" title="证据册">
+      <span class="book-icon">📖</span><span>证据册</span>
+      <span id="book-badge"></span>
+    </button>
+
+    <!-- ======== 对话框 ======== -->
+    <div id="dlg">
+      <div id="dlg-name">旁白</div>
+      <div id="dlg-text"></div>
+      <button id="dlg-fast" title="快进">⏩ 快进</button>
+      <div id="dlg-key">✦ 关键证据</div>
+      <div id="dlg-continue">▼ 点击继续</div>
+    </div>
+
+    <!-- ======== 弹层 ======== -->
+    <div id="overlay">
+      <canvas id="ov-canvas"></canvas>
+      <div id="ov-text"></div>
+    </div>
+
+    <div id="intertitle">
+      <div id="it-title">序幕</div>
+      <div id="it-sub">昏沉梦</div>
+    </div>
+
+    <div id="artifact-card">
+      <div id="art-tag">文物原型</div>
+      <div id="art-name">胡汉交兵画像石</div>
+      <div id="art-asset"></div>
+    </div>
+
+    <div id="interact-card">
+      <div id="card-title">交互</div>
+      <div id="card-asset"></div>
+      <div id="card-desc"></div>
+      <button id="card-btn">确认</button>
+    </div>
+
+    <div id="fx-panel">
+      <div id="panel-text"></div>
+      <div id="panel-asset"></div>
+    </div>
+
+    <div id="toasts"></div>
+    <div id="warn-flash"></div>
+
+    <div id="death">
+      <div id="death-msg">心神耗尽……</div>
+      <div class="death-sub">你被黑暗吞没了</div>
+    </div>
+
+    <!-- ======== 证据册 ======== -->
+    <div id="evidence-book">
+      <div class="book-panel">
+        <div class="book-head">
+          <span class="book-title">身份证据册</span>
+          <span id="book-count"></span>
+          <button id="book-close">✕</button>
+        </div>
+        <div id="book-tabs"></div>
+        <div id="book-content"></div>
+        <div class="book-foot">六页：籍贯 · 官职 · 品格 · 亲缘 · 经历 · 结局</div>
+      </div>
+    </div>
+
+    <!-- ======== 剧情回顾（探案模式） ======== -->
+    <div id="review-modal">
+      <div class="review-panel">
+        <div class="review-head">剧情回顾</div>
+        <div id="review-hint"></div>
+        <div id="review-list"></div>
+        <div class="review-foot">
+          <span id="review-progress"></span>
+          <button id="review-done">继续前行 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== 标题界面 ======== -->
+    <div id="title-screen" class="show">
+      <div id="title-bg"></div>
+      <div class="title-main">
+        <h1>阙下归人</h1>
+        <p class="subtitle">渠县汉阙 · 二维剧情解谜 · 中式志怪</p>
+        <p class="slice">本次试玩片段：序幕 · 昏沉梦 → 第一幕 · 射天狼</p>
+
+        <div class="modes">
+          <button class="mode-card" data-mode="tour">
+            <span class="mode-name">游览模式</span>
+            <span class="mode-desc">关键句自动发光并归入证据册；点错声波有提示；无心神压力。适合轻松游览。</span>
+          </button>
+          <button class="mode-card" data-mode="detective">
+            <span class="mode-name">探案模式</span>
+            <span class="mode-desc">关键句不发光，需在「剧情回顾」中自行找出有效对白；找错损耗心神，耗尽重来。适合推理爱好者。</span>
+          </button>
+        </div>
+
+        <div class="player-setup">
+          <label>你的名字 <input id="player-name" type="text" maxlength="8" placeholder="游客"></label>
+          <span class="gender-label">称呼</span>
+          <button class="gender-btn active" data-g="f">女 · 小姑娘</button>
+          <button class="gender-btn" data-g="m">男 · 小伙子</button>
+        </div>
+
+        <button id="btn-start" disabled>点 燃 火 种 · 开 始</button>
+        <p class="tips">空格 / 点击画面推进对话 · ⏩ 快进 · Esc 关闭证据册 · 两种难度共用剧情与结局</p>
+      </div>
+    </div>
+
+    <!-- ======== 结算界面 ======== -->
+    <div id="ending">
+      <div class="ending-panel">
+        <h2>第一幕 · 完</h2>
+        <p class="ending-sub">记忆的光影散去，你回到墓室。他依旧站在黑雾里，面容却似乎清晰了一分。</p>
+        <div class="ending-cols">
+          <div class="ending-col">
+            <h3>已收录证据</h3>
+            <ul id="ending-evidence"></ul>
+          </div>
+          <div class="ending-col">
+            <h3>待解之谜</h3>
+            <ul id="ending-remain"></ul>
+          </div>
+        </div>
+        <div class="ending-ph-row">
+          <div id="ending-ph"></div>
+          <p id="ending-ph-note"></p>
+        </div>
+        <p class="ending-next">墓室深处，仍有器物在嚷嚷……约莫还剩四件。<br>（第二幕 · 敬请期待）</p>
+        <div class="ending-btns">
+          <button id="ending-book">查看证据册</button>
+          <button id="ending-restart">重新开始</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/minigames.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
