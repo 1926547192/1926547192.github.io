@@ -666,6 +666,70 @@ button { font-family: inherit; cursor: pointer; }
 .wave.miss .wave-core { background: #ff8a80; }
 .wave.hit .wave-core { background: #fff6c2; box-shadow: 0 0 40px 14px rgba(255,230,140,0.9); }
 
+/* ================= 文档阅读（名帖等） ================= */
+#document-modal {
+  position: fixed; inset: 0; z-index: 46;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(3,4,6,0.72);
+}
+#document-modal.show { display: flex; }
+.doc-panel {
+  width: min(620px, 92vw); max-height: 82vh;
+  display: flex; flex-direction: column; gap: 12px;
+  background: linear-gradient(180deg, #efe6cd, #e2d4b2);
+  border: 1px solid #8a7a55; border-radius: 12px;
+  padding: 20px 26px;
+  color: #4a3f2c;
+  box-shadow: 0 14px 60px rgba(0,0,0,0.7), inset 0 0 40px rgba(120,100,60,0.15);
+  animation: fadeIn 0.35s ease;
+}
+.doc-head { display: flex; align-items: center; gap: 12px; border-bottom: 1px dashed #b3a176; padding-bottom: 10px; }
+#doc-title { font-family: var(--serif); font-size: 16px; font-weight: bold; letter-spacing: 3px; }
+#doc-close { margin-left: auto; background: none; border: 1px solid #8a7a55; color: #6b5c3e; border-radius: 8px; width: 32px; height: 32px; font-size: 14px; }
+#doc-close:hover { color: #3a2f1c; border-color: #6b5c3e; }
+#doc-body { overflow-y: auto; padding-right: 4px; }
+.doc-line {
+  font-family: var(--serif); font-size: 15.5px; line-height: 2.1;
+  letter-spacing: 1px; margin: 6px 0;
+}
+
+/* ---- 发光名帖（场景内可点击） ---- */
+.doc-card {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+  background: none; border: none;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  animation: keyFloat 2s ease-in-out infinite;
+}
+.doc-card-icon { font-size: 52px; filter: drop-shadow(0 0 14px rgba(255,214,130,0.7)); }
+.doc-card-label {
+  font-family: var(--serif); font-size: 15px; letter-spacing: 4px; color: #ffe9b0;
+  background: rgba(8,10,14,0.8); border: 1px solid rgba(212,169,78,0.5);
+  border-radius: 8px; padding: 4px 16px;
+}
+.doc-card .ob-pulse { width: 64px; height: 64px; }
+.doc-card.done { animation: none; opacity: 0.45; }
+
+/* ================= 血泪喷溅 ================= */
+.blood { position: absolute; inset: 0; overflow: hidden; transition: opacity 0.6s; }
+.blood.out { opacity: 0; }
+.blood-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(150,18,12,0.5), rgba(30,0,0,0.92));
+}
+.drip {
+  position: absolute; top: -24%;
+  width: 13px; height: 34px;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(180deg, #a31410, #5a0a08);
+  box-shadow: 0 0 10px rgba(150,20,14,0.8);
+  animation: dripFall 1.6s linear forwards;
+}
+.blood-note {
+  position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%);
+  font-size: 12px; letter-spacing: 2px; color: #c9a0a0;
+}
+.blood .ph-tag { position: absolute; bottom: 16%; left: 50%; transform: translateX(-50%); }
+
 /* ================= 动画 ================= */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes stageFlicker { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
@@ -712,6 +776,7 @@ button { font-family: inherit; cursor: pointer; }
   to { transform: scale(1.75); opacity: 0; }
 }
 @keyframes corePulse { 0%,100% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-50%,-50%) scale(1.35); } }
+@keyframes dripFall { to { transform: translateY(150vh); } }
 
 /* ================= 响应式 ================= */
 @media (max-width: 768px) {

@@ -15,6 +15,8 @@ const Minigames = {
       case 'scare':   return this.scare(node);
       case 'listen':  return this.listen(node);
       case 'review':  return this.review(node);
+      case 'blood':   return this.blood(node);
+      case 'document': return this.document(node);
     }
   },
 
@@ -279,6 +281,77 @@ const Minigames = {
     });
   },
 
+  /* ---------------- 血泪喷溅转场（第二幕·凤鸟泣血） ---------------- */
+  blood(node) {
+    return new Promise((resolve) => {
+      Engine.hint(node.hint);
+      Engine.hideDlg();
+      const fx = Engine.els.fx;
+      const wrap = document.createElement('div');
+      wrap.className = 'blood';
+      wrap.innerHTML =
+        '<div class="blood-flash"></div>' +
+        '<span class="ph-tag">素材占位</span><span class="blood-note">特效·血泪喷溅动图（程序模拟血滴，可替换动图）</span>';
+      for (let i = 0; i < 7; i++) {
+        const d = document.createElement('i');
+        d.className = 'drip';
+        d.style.left = (6 + Math.random() * 88) + '%';
+        d.style.animationDelay = (Math.random() * 0.9) + 's';
+        d.style.animationDuration = (1.1 + Math.random() * 0.9) + 's';
+        wrap.appendChild(d);
+      }
+      fx.appendChild(wrap);
+      Engine.els.vignette.classList.add('red');
+      AudioFX.scare();
+      Engine.shakeStage();
+      setTimeout(() => { wrap.classList.add('out'); Engine.els.vignette.classList.remove('red'); }, 1900);
+      setTimeout(() => { wrap.remove(); resolve(); }, 2600);
+    });
+  },
+
+  /* ---------------- 文档交互（第二幕·名帖） ---------------- */
+  document(node) {
+    return new Promise((resolve) => {
+      if (node.bg) Engine.setBg(node.bg);
+      if (node.chars) Engine.setChars(node.chars);
+      Engine.setLight(node.light || null);
+      Engine.hint(node.hint || '');
+      Engine.hideDlg();
+
+      // 写入剧情回顾（探案模式可在回顾中找出）
+      const logId = node.log;
+      if (logId) {
+        Engine.logs[logId] = Engine.logs[logId] || [];
+        (node.lines || []).forEach((t) => {
+          Engine.logs[logId].push({ doc: true, name: node.docName || '名帖', text: t, evidence: node.evidence || null });
+        });
+      }
+
+      const layer = document.getElementById('minigame-layer');
+      layer.innerHTML = '';
+      layer.classList.add('show');
+      const card = document.createElement('button');
+      card.className = 'doc-card';
+      card.innerHTML = '<span class="ob-pulse"></span><span class="doc-card-icon">📜</span><span class="doc-card-label">名帖</span>';
+      card.addEventListener('pointerdown', (e) => e.stopPropagation());
+      card.addEventListener('click', () => {
+        if (card.classList.contains('done')) return;
+        card.classList.add('done');
+        AudioFX.click();
+        Engine.openDocument(node.docTitle || '', node.lines || []).then(() => {
+          // 游览模式：读完名帖自动收录
+          if (Engine.mode === 'tour') {
+            (node.evidence || []).forEach((id) => Engine.collectEvidence(id));
+          }
+          layer.classList.remove('show');
+          layer.innerHTML = '';
+          resolve();
+        });
+      });
+      layer.appendChild(card);
+    });
+  },
+
   /* ---------------- 剧情回顾（探案模式核心） ---------------- */
   review(node) {
     if (Engine.mode !== 'detective') return Promise.resolve(); // 游览模式：关键句已自动发光收录
@@ -294,21 +367,35 @@ const Minigames = {
           '关键句不会发光——请从这段对白中，找出能证明墓主身份的关键证据。找错会损耗心神（-1），心神耗尽将重来。';
         Engine.els.reviewDone.classList.remove('show');
 
-        const lineEls = [];
-        log.forEach((l, idx) => {
-          if (!l.speaker) return; // 仅对白句可点击
+        const rows = [];
+        const updateProgress = () => {
+          const got = keyIds.filter((id) => Engine.hasEvidence(id)).length;
+          Engine.els.reviewProgress.textContent = `已找到关键证据 ${got} / ${keyIds.length}`;
+        };
+
+        log.forEach((l) => {
+          if (!l.speaker && !l.doc) return; // 仅对白句与文档可点击
           const row = document.createElement('button');
           row.className = 'rev-line';
-          const who = l.speaker === 'tourist' ? (Engine.player.name || '游客') : (CHAR_DEFS[l.speaker] ? CHAR_DEFS[l.speaker].name : l.speaker);
-          row.innerHTML = `<span class="rev-who" style="color:${CHAR_DEFS[l.speaker] ? CHAR_DEFS[l.speaker].color : '#ccc'}">${who}</span><span class="rev-text">${l.text}</span><span class="rev-mark"></span>`;
+          let who, color;
+          if (l.doc) { who = '【' + (l.name || '名帖') + '】'; color = '#c9a86a'; }
+          else {
+            who = l.speaker === 'tourist' ? (Engine.player.name || '游客') : (CHAR_DEFS[l.speaker] ? CHAR_DEFS[l.speaker].name : l.speaker);
+            color = CHAR_DEFS[l.speaker] ? CHAR_DEFS[l.speaker].color : '#ccc';
+          }
+          row.innerHTML = `<span class="rev-who" style="color:${color}">${who}</span><span class="rev-text">${l.text}</span><span class="rev-mark"></span>`;
+          const markGot = (r) => { r.classList.add('got'); r.querySelector('.rev-mark').textContent = '✓ 已收录'; };
           row.addEventListener('click', () => {
             if (row.classList.contains('got') || row.classList.contains('wrong')) return;
             const ids = l.evidence || [];
-            const hit = ids.some((id) => !Engine.hasEvidence(id));
-            if (hit) {
-              row.classList.add('got');
-              row.querySelector('.rev-mark').textContent = '✓ 已收录';
+            if (ids.length) {
+              // 证据已收录过的来源句：直接标记，不扣心神
+              if (ids.every((id) => Engine.hasEvidence(id))) { markGot(row); return; }
               ids.forEach((id) => Engine.collectEvidence(id));
+              // 同一证据的其他来源句一并标记
+              rows.forEach(({ row: r2, l: l2 }) => {
+                if (l2.evidence && l2.evidence.length && l2.evidence.every((id) => Engine.hasEvidence(id))) markGot(r2);
+              });
               updateProgress();
               if (keyIds.every((id) => Engine.hasEvidence(id))) {
                 Engine.toast('关键证据已全部收录！', 'good');
@@ -328,13 +415,8 @@ const Minigames = {
             }
           });
           list.appendChild(row);
-          lineEls.push(row);
+          rows.push({ row, l });
         });
-
-        const updateProgress = () => {
-          const got = keyIds.filter((id) => Engine.hasEvidence(id)).length;
-          Engine.els.reviewProgress.textContent = `已找到关键证据 ${got} / ${keyIds.length}`;
-        };
         updateProgress();
 
         Engine.els.reviewDone.onclick = () => {

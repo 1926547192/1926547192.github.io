@@ -9,10 +9,17 @@ const PLACE_LABEL = {
   'bg-title': '标题背景（汉阙）', 'bg-street': '背景·清晨街角', 'bg-bus': '背景·大巴车内',
   'bg-tomb': '背景·昏暗墓室', 'bg-stone': '画像石·石刻特写', 'bg-camp': '背景·夜晚军营',
   'bg-tent': '背景·主营帐内', 'bg-feast': '背景·庆功宴饮',
+  'bg-censer': '背景·冬日官署（铜熏炉飘香）', 'bg-fenghuan': '背景·凤鸟炉特写（手与飘烟）',
+  'bg-yuewu': '石刻·乐舞杂技画像石', 'bg-fair': '背景·汉代庙会街头',
+  'bg-river': '背景·河畔放河灯', 'bg-tower': '背景·楼阁同饮（背影·酒壶）',
   'char-oldlady': '立绘·老婆婆', 'char-shadow': '立绘·失忆男子（黑影）',
   'char-fenghuan': '立绘·失忆男子（渐清晰）', 'char-bangu': '立绘·班固',
+  'char-shuli': '立绘·属吏（昌文）', 'char-ajin': '立绘·阿瑾', 'char-ajie': '立绘·阿瑾的姐姐',
+  'char-yaoguang': '立绘·姚光／姚安',
   'item-match': '道具·火柴', 'item-torch': '道具·火把',
-  'fx-lunge': '特效·黑影扑屏', 'fx-war': '定格·战争场面', 'ui-book-bg': '证据册纹样',
+  'item-mingtie': '道具·名帖', 'item-winepot': '道具·酒壶',
+  'fx-lunge': '特效·黑影扑屏', 'fx-war': '定格·战争场面',
+  'fx-blood': '特效·血泪喷溅', 'fx-painting': '定格·画像活化', 'ui-book-bg': '证据册纹样',
 };
 
 const Engine = {
@@ -48,6 +55,7 @@ const Engine = {
       bookCount: $('book-count'), bookClose: $('book-close'),
       review: $('review-modal'), reviewList: $('review-list'), reviewProgress: $('review-progress'),
       reviewDone: $('review-done'), reviewHint: $('review-hint'),
+      doc: $('document-modal'), docTitle: $('doc-title'), docBody: $('doc-body'), docClose: $('doc-close'),
       title: $('title-screen'), ending: $('ending'),
       warn: $('warn-flash'),
     };
@@ -74,6 +82,10 @@ const Engine = {
     this.els.bookBtn.addEventListener('click', () => { AudioFX.click(); this.openBook(); });
     this.els.bookClose.addEventListener('click', () => { AudioFX.click(); this.closeBook(); });
     this.els.book.addEventListener('click', (e) => { if (e.target === this.els.book) this.closeBook(); });
+
+    // 文档（名帖等）
+    this.els.docClose.addEventListener('click', () => { AudioFX.click(); this.closeDocument(); });
+    this.els.doc.addEventListener('click', (e) => { if (e.target === this.els.doc) this.closeDocument(); });
 
     // 快进
     this.els.dlgFast.addEventListener('click', (e) => {
@@ -103,6 +115,7 @@ const Engine = {
       }
       if (e.code === 'Escape') {
         if (this.els.book.classList.contains('show')) this.closeBook();
+        if (this.els.doc.classList.contains('show')) this.closeDocument();
       }
     });
 
@@ -150,8 +163,11 @@ const Engine = {
       case 'observe':
       case 'scare':
       case 'listen':
-      case 'review':     await Minigames.run(node); break;
-      case 'ending':     await this.nodeEnding(); break;
+      case 'review':
+      case 'blood':
+      case 'document': await Minigames.run(node); break;
+      case 'hint':     this.hint(node.text); break;
+      case 'ending':   await this.nodeEnding(); break;
       default: break;
     }
   },
@@ -262,7 +278,7 @@ const Engine = {
         AudioFX.success();
         setTimeout(() => {
           this.els.overlay.style.background = 'rgba(5,7,10,0.55)';
-          this.showPanel('fx-war', node.text || '');
+          this.showPanel(node.asset || 'fx-war', node.text || '');
         }, 500);
       } else {
         this.els.overlay.style.background = '#05070a';
@@ -392,7 +408,7 @@ const Engine = {
       else if (ln.cls === 'thought') { nameText = ln.name || '内心想法'; cls = 'thought'; this.els.dlgName.style.color = '#8fa0bf'; }
       else if (ln.cls === 'action') { nameText = ln.name || '『』'; cls = 'action'; this.els.dlgName.style.color = '#8c8372'; }
       else {
-        nameText = ln.speaker === 'tourist' ? (this.player.name || '游客') : (CHAR_DEFS[ln.speaker] ? CHAR_DEFS[ln.speaker].name : ln.speaker);
+        nameText = ln.label || (ln.speaker === 'tourist' ? (this.player.name || '游客') : (CHAR_DEFS[ln.speaker] ? CHAR_DEFS[ln.speaker].name : ln.speaker));
         this.els.dlgName.style.color = CHAR_DEFS[ln.speaker] ? CHAR_DEFS[ln.speaker].color : '#e8dfc8';
       }
       this.els.dlgName.textContent = nameText;
@@ -500,6 +516,25 @@ const Engine = {
   closeBook() {
     this.els.book.classList.remove('show');
     if (this._onBookCloseOnce) { const f = this._onBookCloseOnce; this._onBookCloseOnce = null; f(); }
+  },
+
+  /* ---------------- 文档（名帖等） ---------------- */
+  openDocument(title, lines) {
+    this.els.docTitle.textContent = title || '';
+    this.els.docBody.innerHTML = '';
+    (lines || []).forEach((t) => {
+      const p = document.createElement('p');
+      p.className = 'doc-line';
+      p.textContent = t;
+      this.els.docBody.appendChild(p);
+    });
+    this.els.doc.classList.add('show');
+    AudioFX.whoosh();
+    return new Promise((res) => { this._onDocClose = res; });
+  },
+  closeDocument() {
+    this.els.doc.classList.remove('show');
+    if (this._onDocClose) { const f = this._onDocClose; this._onDocClose = null; f(); }
   },
   switchBookTab(page) {
     this.els.bookTabs.querySelectorAll('.book-tab').forEach((b) => {
